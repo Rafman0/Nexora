@@ -5,7 +5,7 @@ import ProjectPreviewModal from './ProjectPreviewModal'
 import projects from '../../data/projects'
 import './Projects.css'
 
-const AllProjects = () => {
+const AllProjects = ({ onNavigateHome }) => {
   const [selectedProject, setSelectedProject] = useState(null)
   const closePreview = useCallback(() => setSelectedProject(null), [])
 
@@ -14,7 +14,12 @@ const AllProjects = () => {
       <Section id="all-projects" className="projects all-projects-page">
         <div className="container-custom">
           <div className="projects-header scroll-reveal">
-            <a className="all-projects-back" href="/" aria-label="Back to Nexora portfolio">
+            <a
+              className="all-projects-back"
+              href={import.meta.env.BASE_URL}
+              aria-label="Back to Nexora portfolio"
+              onClick={onNavigateHome}
+            >
               <span aria-hidden="true">&larr;</span> Back to portfolio
             </a>
             <span className="section-label">[PORTFOLIO]</span>

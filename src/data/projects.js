@@ -52,7 +52,7 @@ const projects = [
       { src: aiStudyAssistant02221, alt: 'AI Study Assistant screenshot, September 2 at 00:22:21' },
       { src: aiStudyAssistantSeptember21, alt: 'AI Study Assistant screenshot, September 21' },
     ],
-    liveUrl: null,
+    liveUrl: 'https://ai-study-assistant-gwoo.onrender.com',
     githubUrl: null,
   },
   {

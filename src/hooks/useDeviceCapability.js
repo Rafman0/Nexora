@@ -24,15 +24,14 @@ const useDeviceCapability = () => {
       const isLowEnd = isMobile && (isSlowConnection || isLowCores)
       
       let particleCount = 2500
-      if (isMobile) particleCount = 800
+      if (isMobile) particleCount = isLowEnd ? 300 : 800
       else if (isTablet) particleCount = 1500
-      else if (isLowEnd) particleCount = 600
-      
+
       setCapability({
         isLowEnd,
         isMobile,
         particleCount,
-        enableEffects: !isLowEnd
+        enableEffects: true
       })
     }
 

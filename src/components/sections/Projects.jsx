@@ -6,7 +6,7 @@ import ProjectPreviewModal from './ProjectPreviewModal'
 import projects from '../../data/projects'
 import './Projects.css'
 
-const Projects = () => {
+const Projects = ({ onNavigateToProjects }) => {
   const [selectedProject, setSelectedProject] = useState(null)
   const renderProjectGrid = () => (
     <div className="projects-grid">
@@ -38,7 +38,12 @@ const Projects = () => {
           {renderProjectGrid()}
 
           <div className="projects-cta scroll-reveal">
-            <Button href="/projects" variant="secondary" size="lg">
+            <Button
+              href={`${import.meta.env.BASE_URL}projects`}
+              onClick={onNavigateToProjects}
+              variant="secondary"
+              size="lg"
+            >
               View All Projects
             </Button>
             <Button href="#contact" variant="secondary" size="lg">

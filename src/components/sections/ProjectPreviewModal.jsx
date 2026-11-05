@@ -15,8 +15,13 @@ const getExternalUrl = (value) => {
 
 const ProjectPreviewModal = ({ project, onClose }) => {
   const [activeImage, setActiveImage] = useState(0)
-  const [imageLoaded, setImageLoaded] = useState(false)
-  const [imageError, setImageError] = useState(false)
+  const [imageLoad, setImageLoad] = useState({
+    source: null,
+    src: null,
+    progress: null,
+    loaded: false,
+    error: false,
+  })
   const [isExpanded, setIsExpanded] = useState(false)
   const backdropRef = useRef(null)
   const dialogRef = useRef(null)
@@ -82,11 +87,6 @@ const ProjectPreviewModal = ({ project, onClose }) => {
     }
   }, [isExpanded])
 
-  useEffect(() => {
-    setImageLoaded(false)
-    setImageError(false)
-  }, [activeImage, project.id])
-
   const moveImage = (direction) => {
     setActiveImage((index) => (index + direction + screenshots.length) % screenshots.length)
   }
@@ -108,6 +108,56 @@ const ProjectPreviewModal = ({ project, onClose }) => {
   const screenshotAlt = typeof screenshot === 'string'
     ? `${project.title} project screenshot ${activeImage + 1}`
     : screenshot?.alt || `${project.title} project screenshot ${activeImage + 1}`
+  const currentImageLoad = imageLoad.source === screenshotSrc
+    ? imageLoad
+    : { src: null, progress: null, loaded: false, error: false }
+
+  useEffect(() => {
+    setImageLoad({
+      source: screenshotSrc,
+      src: null,
+      progress: null,
+      loaded: false,
+      error: false,
+    })
+    if (!screenshotSrc) return undefined
+
+    const request = new XMLHttpRequest()
+    let objectUrl
+    request.open('GET', screenshotSrc)
+    request.responseType = 'blob'
+    request.onprogress = (event) => {
+      if (event.lengthComputable) {
+        setImageLoad((current) => current.source === screenshotSrc
+          ? { ...current, progress: Math.floor((event.loaded / event.total) * 100) }
+          : current)
+      }
+    }
+    request.onload = () => {
+      if (request.status < 200 || request.status >= 300 || !request.response) {
+        setImageLoad((current) => current.source === screenshotSrc
+          ? { ...current, error: true }
+          : current)
+        return
+      }
+
+      objectUrl = URL.createObjectURL(request.response)
+      setImageLoad((current) => current.source === screenshotSrc
+        ? { ...current, src: objectUrl, progress: 100 }
+        : current)
+    }
+    request.onerror = () => {
+      setImageLoad((current) => current.source === screenshotSrc
+        ? { ...current, error: true }
+        : current)
+    }
+    request.send()
+
+    return () => {
+      request.abort()
+      if (objectUrl) URL.revokeObjectURL(objectUrl)
+    }
+  }, [screenshotSrc])
 
   return createPortal(
     <div
@@ -141,31 +191,47 @@ const ProjectPreviewModal = ({ project, onClose }) => {
         </header>
 
         <div className="project-gallery">
-          {screenshotSrc && !imageError ? (
+          {screenshotSrc && !currentImageLoad.error ? (
             <>
-              {!imageLoaded && <Skeleton className="project-gallery-skeleton" variant="card" />}
+              {!currentImageLoad.loaded && <Skeleton className="project-gallery-skeleton" variant="card" />}
+              {!currentImageLoad.loaded && (
+                <div className="project-gallery-progress" role="status" aria-live="polite">
+                  <span>
+                    {currentImageLoad.progress === null
+                      ? 'Loading image...'
+                      : `${currentImageLoad.progress}% loaded`}
+                  </span>
+                  <progress
+                    max="100"
+                    value={currentImageLoad.progress ?? undefined}
+                    aria-label="Screenshot loading progress"
+                  />
+                </div>
+              )}
               <button
                 ref={galleryImageButtonRef}
                 type="button"
-                className={`project-gallery-image-button ${imageLoaded ? 'project-gallery-image-loaded' : ''}`}
+                className={`project-gallery-image-button ${currentImageLoad.loaded ? 'project-gallery-image-loaded' : ''}`}
                 aria-label="View larger screenshot"
                 onClick={() => setIsExpanded(true)}
               >
-                <img
-                  key={`${project.id}-${activeImage}`}
-                  src={screenshotSrc}
-                  alt={screenshotAlt}
-                  loading="lazy"
-                  onLoad={() => setImageLoaded(true)}
-                  onError={() => {
-                    setImageLoaded(true)
-                    setImageError(true)
-                  }}
-                />
+                {currentImageLoad.src && (
+                  <img
+                    key={`${project.id}-${activeImage}`}
+                    src={currentImageLoad.src}
+                    alt={screenshotAlt}
+                    onLoad={() => setImageLoad((current) => current.source === screenshotSrc
+                      ? { ...current, loaded: true }
+                      : current)}
+                    onError={() => setImageLoad((current) => current.source === screenshotSrc
+                      ? { ...current, error: true }
+                      : current)}
+                  />
+                )}
               </button>
             </>
           ) : renderImagePlaceholder(
-            imageError ? 'Project screenshot unavailable' : 'Project screenshots coming soon',
+            currentImageLoad.error ? 'Project screenshot unavailable' : 'Project screenshots coming soon',
           )}
 
           {screenshots.length > 1 && (
@@ -242,7 +308,7 @@ const ProjectPreviewModal = ({ project, onClose }) => {
             <div className="project-modal-links">
               {liveUrl && (
                 <a href={liveUrl} target="_blank" rel="noopener noreferrer">
-                  View Live Project
+                  View Live Site
                 </a>
               )}
               {githubUrl && (
